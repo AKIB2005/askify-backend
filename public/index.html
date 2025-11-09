@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ASKIFY - N.K. Orchid College Assistant</title>
+<style>
+  :root{
+    --bg: #f7f7ff;
+    --bg-grad-a:#faf5ff;
+    --bg-grad-b:#eff6ff;
+    --card:#ffffff;
+    --text:#111827;
+    --muted:#6b7280;
+    --ring:#a855f7;
+    --ring-weak: rgba(168,85,247,.15);
+    --accent-a:#a855f7;
+    --accent-b:#ec4899;
+    --accent-c:#22d3ee;
+    --shadow: 0 10px 30px rgba(17,24,39,.08);
+    --shadow-strong: 0 16px 50px rgba(17,24,39,.18);
+    --bubble-user: linear-gradient(135deg,var(--accent-a),var(--accent-b));
+    --bubble-bot: #ffffff;
+    --scrollbar: linear-gradient(135deg,var(--accent-a),var(--accent-b));
+  }
+  .dark{
+    --bg:#0b1020;
+    --bg-grad-a:#0e152a;
+    --bg-grad-b:#0b1020;
+    --card:#0f172a;
+    --text:#e5e7eb;
+    --muted:#a1a1aa;
+    --ring:#60a5fa;
+    --ring-weak: rgba(96,165,250,.2);
+    --accent-a:#60a5fa;
+    --accent-b:#a78bfa;
+    --accent-c:#34d399;
+    --shadow: 0 10px 30px rgba(0,0,0,.45);
+    --shadow-strong: 0 18px 55px rgba(0,0,0,.7);
+    --bubble-user: linear-gradient(135deg,#60a5fa,#a78bfa);
+    --bubble-bot:#0b1224;
+    --scrollbar: linear-gradient(135deg,#60a5fa,#a78bfa);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,Arial,sans-serif;
+    color:var(--text);
+    background: radial-gradient(1200px 800px at 20% 10%,rgba(168,85,247,.12),transparent 55%),
+                radial-gradient(1000px 700px at 80% 90%,rgba(34,211,238,.10),transparent 55%),
+                linear-gradient(135deg,var(--bg-grad-a) 0%, var(--bg-grad-b) 100%);
+    overflow:hidden;
+  }
+
+  body:before{
+    content:"";
+    position:fixed; inset:-40%;
+    background:
+      radial-gradient(600px 400px at 15% 35%, rgba(236,72,153,.10), transparent 60%),
+      radial-gradient(700px 500px at 85% 65%, rgba(34,211,238,.10), transparent 60%);
+    animation:float 18s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,-14px)}}
+
+  .container{
+    height:100%;
+    max-width:1200px;
+    margin:0 auto;
+    display:flex; flex-direction:column;
+    position:relative; z-index:1;
+    box-shadow: var(--shadow);
+  }
+
+  .header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px;
+    background:color-mix(in oklab, var(--card), transparent 0%);
+    backdrop-filter:saturate(1.2) blur(14px);
+    border-bottom:1px solid var(--ring-weak);
+    position:sticky; top:0; z-index:2;
+  }
+  .header-left{display:flex;align-items:center;gap:12px}
+  .logo{
+    font-weight:800; letter-spacing:-.02em; font-size:20px;
+    background: linear-gradient(135deg,var(--accent-a),var(--accent-b),var(--accent-c));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    background-size:200% 200%; animation:gradientFlow 6s ease infinite;
+    position:relative;
+  }
+  .logo:after{
+    content:"✨"; position:absolute; right:-22px; top:-6px; font-size:14px;
+    animation:sparkle 2.2s ease-in-out infinite;
+  }
+  @keyframes gradientFlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  @keyframes sparkle{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25) rotate(15deg);opacity:.8}}
+  .college-name{font-size:12px;color:var(--muted)}
+  .header-right{display:flex;align-items:center;gap:10px}
+  .select, .btn{
+    font-size:12px; border-radius:10px; padding:8px 12px; border:2px solid transparent;
+    background:var(--card); color:var(--text); cursor:pointer; transition:.25s ease;
+  }
+  .select{border-color:var(--ring-weak)}
+  .select:focus{outline:none; border-color:var(--ring); box-shadow:0 0 0 3px var(--ring-weak)}
+  .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.08)}
+  .btn-ghost{background:color-mix(in oklab, var(--accent-a) 12%, transparent); border-color:var(--ring-weak)}
+  .btn-theme{background: linear-gradient(135deg,var(--accent-a),var(--accent-b)); color:#fff; border:none}
+  .api-status{
+    font-size:10px; padding:4px 8px; border-radius:6px; 
+    background:var(--ring-weak); color:var(--muted);
+  }
+  .api-status.active{background:rgba(34,211,238,.2); color:var(--accent-c)}
+
+  .chat{flex:1; overflow:auto; padding:22px; background:transparent}
+  .chat::-webkit-scrollbar{width:10px}
+  .chat::-webkit-scrollbar-thumb{background:var(--scrollbar); border-radius:10px; border:2px solid rgba(255,255,255,.35)}
+  .welcome{
+    height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  }
+  .welcome .icon{font-size:60px; margin-bottom:10px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.12)); animation:wave 2.2s ease-in-out infinite}
+  @keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(15deg)}75%{transform:rotate(-12deg)}}
+  .title{
+    font-size:26px; font-weight:800; margin-bottom:6px;
+    background: linear-gradient(135deg,var(--accent-a),var(--accent-b),var(--accent-c));
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% 200%; animation:gradientFlow 6s ease infinite;
+  }
+  .subtitle{font-size:15px;color:var(--muted)}
+  .quick{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; width:100%; max-width:720px; margin-top:22px}
+  .qbtn{
+    padding:14px 16px; border-radius:14px; border:1px solid var(--ring-weak); background:var(--card); text-align:left;
+    display:flex; align-items:center; gap:10px; cursor:pointer; transition:.25s cubic-bezier(.4,0,.2,1);
+    box-shadow: var(--shadow);
+    position:relative; overflow:hidden;
+  }
+  .qbtn::before{
+    content:""; position:absolute; inset:0; background: linear-gradient(90deg,transparent, color-mix(in oklab,var(--accent-a) 18%,transparent), color-mix(in oklab,var(--accent-b) 18%,transparent), transparent);
+    transform:translateX(-100%); transition:.6s ease;
+  }
+  .qbtn:hover{transform:translateY(-3px) scale(1.02); border-color:var(--ring)}
+  .qbtn:hover::before{transform:translateX(100%)}
+
+  .messages .msg{display:flex; gap:10px; margin:14px 0; animation:slideIn .35s ease}
+  @keyframes slideIn{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:translateY(0)}}
+  .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow: var(--shadow)}
+  .avatar.user{background:var(--bubble-user); color:#fff}
+  .avatar.bot{background: linear-gradient(135deg,var(--accent-c),#06b6d4); color:#fff}
+  .bubble{flex:1; padding:12px 14px; border-radius:14px; line-height:1.6; font-size:14px; box-shadow: var(--shadow)}
+  .msg.user .bubble{background:var(--bubble-user); color:#fff; margin-left:auto; max-width:70%}
+  .msg.bot .bubble{background:var(--bubble-bot); border:1px solid var(--ring-weak); color:var(--text); max-width:85%}
+
+  .faculty-card{background:color-mix(in oklab, var(--accent-a) 8%, transparent); border-left:3px solid var(--accent-a); padding:10px; border-radius:8px; margin:8px 0}
+  .faculty-name{font-weight:700; color:var(--accent-a); margin-bottom:3px}
+  .faculty-detail{font-size:13px; color:var(--text)}
+
+  .typing-indicator{display:inline-block}
+  .typing-indicator span{
+    display:inline-block; width:8px; height:8px; margin:0 2px;
+    background:var(--accent-a); border-radius:50%;
+    animation:typing 1.4s infinite;
+  }
+  .typing-indicator span:nth-child(2){animation-delay:.2s}
+  .typing-indicator span:nth-child(3){animation-delay:.4s}
+  @keyframes typing{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-10px)}}
+
+  .inputbar{
+    border-top:1px solid var(--ring-weak);
+    background:color-mix(in oklab,var(--card), transparent 0%);
+    backdrop-filter:saturate(1.1) blur(14px);
+    padding:14px 18px;
+  }
+  .inputwrap{display:flex; gap:10px; align-items:flex-end}
+  textarea{
+    flex:1; padding:12px 14px; border-radius:12px; border:2px solid var(--ring-weak); background:#fff; resize:none; max-height:140px;
+  }
+  .dark textarea{background:#0b1224; color:var(--text)}
+  textarea:focus{outline:none;border-color:var(--ring); box-shadow:0 0 0 3px var(--ring-weak)}
+  .send{padding:12px 20px; border:none; border-radius:12px; color:#fff; font-weight:700; cursor:pointer;
+        background: linear-gradient(135deg,var(--accent-a),var(--accent-b)); box-shadow: var(--shadow-strong); transition:.25s}
+  .send:hover{transform:translateY(-1px) scale(1.02)}
+  .send:disabled{opacity:.5; cursor:not-allowed; transform:none}
+  .voice{padding:12px;border-radius:12px;border:2px solid transparent;background: linear-gradient(135deg,var(--accent-c),#06b6d4); color:#fff; cursor:pointer; box-shadow: var(--shadow)}
+  .voice.recording{background:linear-gradient(135deg,#f97316,#ef4444); animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.7)}70%{box-shadow:0 0 0 22px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+
+  @media (max-width:768px){
+    .header{flex-direction:column;gap:8px}
+    .msg.user .bubble{max-width:85%}
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">ASKIFY</div>
+        <div class="college-name">N.K. Orchid College of Engineering &amp; Technology</div>
+      </div>
+      <div class="header-right">
+        <span id="apiStatus" class="api-status">🤖 AI Mode</span>
+        <select id="languageSelect" class="select">
+          <option value="en">🇬🇧 English</option>
+          <option value="hi">🇮🇳 हिंदी</option>
+          <option value="mr">🇮🇳 मराठी</option>
+        </select>
+        <button id="themeBtn" class="btn btn-theme" title="Toggle theme">🌙</button>
+        <button id="clearBtn" class="btn btn-ghost">🗑️ Clear</button>
+      </div>
+    </header>
+
+    <div id="chat" class="chat">
+      <div id="welcome" class="welcome">
+        <div class="icon">👋</div>
+        <div class="title">Welcome to Askify!</div>
+        <div class="subtitle">Your intelligent AI assistant for N.K. Orchid College, Solapur</div>
+        <div class="quick">
+          <button class="qbtn" data-question="Tell me about CSE courses">📚 CSE Courses</button>
+          <button class="qbtn" data-question="What are the placement statistics?">💼 Placements</button>
+          <button class="qbtn" data-question="Show me CSE faculty members">👨‍🏫 Faculty</button>
+          <button class="qbtn" data-question="Tell me about lab facilities">🔬 Lab Facilities</button>
+          <button class="qbtn" data-question="How do I apply for admission?">🎓 Admissions</button>
+        </div>
+      </div>
+      <div id="messages" class="messages"></div>
+    </div>
+
+    <div class="inputbar">
+      <div class="inputwrap">
+        <button id="voiceBtn" class="voice" title="Voice input">🎤</button>
+        <textarea id="messageInput" rows="1" placeholder="Ask me anything about N.K. Orchid College..."></textarea>
+        <button id="sendBtn" class="send">Send ➤</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  /* ===================== CONFIGURATION ===================== */
+  // ✅ NO API KEY NEEDED IN FRONTEND - It's secure on the backend!
+  // Change this to your deployed backend URL
+  const BACKEND_API_URL = 'https://your-backend.vercel.app/api/chat'; // Update after deployment
+
+  /* ===================== COLLEGE DATA ===================== */
+  const facultyData = [
+    { name: "Dr. B. K. Songe", position: "Principal", qualification: "B.E, M.E, Ph.D (NITK) · BEE Certified Energy Manager & Energy Auditor", location: "A-Building, Office Department" },
+    { name: "Dr. V. V. Bag", position: "HOD, CSE Department · Professor", qualification: "B.Tech (CSE), M.Tech (Computer), Ph.D (Computer Engg)", location: "B-Building, 1st Floor, Left Corner" },
+    { name: "Dr. M. B. Patil", position: "Associate Professor · HOD of AIDS Department", qualification: "B.E (CSE), M.Tech (CSE), Ph.D (CSE), Postdoc (Singapore Institute of Technology)", location: "C-Building, 2nd Floor, AT-308" },
+    { name: "Prof. M. S. Otari", position: "Assistant Professor", qualification: "B.E (CSE), Ph.D (Pursuing)", location: "" },
+    { name: "Prof. B. B. Simpi", position: "Assistant Professor", qualification: "B.E (CSE), M.Tech (Data Science)", location: "" },
+    { name: "Prof. N. S. Mehta", position: "Assistant Professor", qualification: "B.E (CSE), M.E (CSE)", location: "" },
+    { name: "Prof. G. R. Shaikh", position: "Assistant Professor", qualification: "B.E (IT), M.E (CSE)", location: "B-Building, 1st Floor, CSE-201 (Project Lab-II)" },
+    { name: "Prof. P. C. Bhuyar", position: "Assistant Professor", qualification: "B.E (CSE), M.Tech (CSE)", location: "B-Building, 2nd Floor, Near Operating System Lab" },
+    { name: "Prof. G. N. Swami", position: "Assistant Professor", qualification: "B.E (CSE), M.E (CSE)", location: "C-Building, 1st Floor, AT-202 (Deep Learning Lab)" },
+    { name: "Prof. P. G. Chirmanchode", position: "Assistant Professor", qualification: "B.Tech (CSE), M.Sc (Data Science)", location: "" },
+    { name: "Prof. R. D. Joshi", position: "Assistant Professor", qualification: "B.E (CSE), M.Tech (CSE), Ph.D (Pursuing)", location: "" },
+    { name: "Prof. S. A. Langote", position: "Assistant Professor", qualification: "B.E (CSE), M.E (CSE)", location: "C-Building, 2nd Floor, AT-303 (Faculty Room)" },
+    { name: "Prof. G. N. Chandorker", position: "Assistant Professor", qualification: "B.E (IT), M.E (CSE)", location: "C-Building, 1st Floor, AT-209 (AI Lab)" },
+    { name: "Prof. T. A. Kamusagi", position: "Assistant Professor", qualification: "B.E (CSE), M.Tech (CSE)", location: "A-Building, 2nd Floor, CSE Dept, CSE-309 Lab" },
+    { name: "Prof. B. B. Dhewad", position: "Assistant Professor", qualification: "B.E (ENTC), M.Tech (ML & AI)", location: "" },
+    { name: "Prof. U. A. Sangolgi", position: "Assistant Professor", qualification: "B.E (CSE), M.E (CSE)", location: "" },
+    { name: "Prof. S. G. Sanmukh", position: "Assistant Professor", qualification: "B.E (IT), M.Tech (CSE)", location: "C-Building, 1st Floor, AT-210 (Data Science Lab)" },
+    { name: "Prof. R. U. Shinde", position: "Assistant Professor", qualification: "B.E (CSE), M.E (CSE)", location: "B-Building, 2nd Floor, CSE-305 (Software Designing Lab)" },
+    { name: "Prof. Z. M. Shaikh", position: "Assistant Professor", qualification: "B.E (CSE), M.E (Computer)", location: "" },
+    { name: "Prof. S. C. Papade", position: "Assistant Professor", qualification: "B.E (CSE), M.E (CSE), Ph.D (Pursuing)", location: "A-Building, 2nd Floor, CSE-306 (Computer Programming Lab-1)" },
+    { name: "Prof. M. B. Rangdal", position: "Assistant Professor", qualification: "B.E (CSE), M.E (CSE)", location: "" },
+    { name: "Prof. P. D. Jawalkar", position: "Assistant Professor", qualification: "B.E (CSE), M.E (Computer Engg)", location: "B-Building, 1st Floor, CSE-202 (Computer Programming Lab-2)" },
+    { name: "Prof. S. D. Dudhani", position: "Assistant Professor", qualification: "B.E (CSE), M.Tech (CSE)", location: "" },
+    { name: "Prof. A. S. Adhatrao", position: "Assistant Professor", qualification: "B.E (CSE), M.E (CSE)", location: "C-Building, 1st Floor, AT-201 (Machine Learning Lab)" },
+    { name: "Prof. S. S. Konda", position: "Assistant Professor", qualification: "B.E (IT), M.Tech (CSE)", location: "B-Building, 1st Floor, CSE-203 (Tutorial Room)" },
+    { name: "Prof. V. D. Gaikwad", position: "Assistant Professor", qualification: "B.E (CSE), M.Tech (CSE)", location: "B-Building, 1st Floor, CSE-201 (Database Lab)" }
+  ];
+
+  const collegeInfo = {
+    name: "N.K. Orchid College of Engineering & Technology",
+    location: "Solapur, India",
+    specializations: ["AI & ML", "Data Science", "Cyber Security", "IoT"],
+    placementRate: "85%+",
+    topRecruiters: ["TCS", "Infosys", "Wipro", "Tech Mahindra", "Cognizant"],
+    admissionBasis: "MHT-CET for UG programs",
+    labs: [
+      { name: "AI & ML Lab", code: "AT-201" },
+      { name: "Deep Learning Lab", code: "AT-202" },
+      { name: "Data Science Lab", code: "AT-210" },
+      { name: "Software Designing Lab", code: "CSE-305" },
+      { name: "Database Lab", code: "CSE-201" }
+    ]
+  };
+
+  const kb = {
+    en:{
+      greeting:"Hello! I'm Askify, your AI-powered N.K. Orchid College assistant. How can I help you today?",
+      courses:"We offer B.Tech in Computer Science & Engineering with specializations in AI & ML, Data Science, Cyber Security, and IoT.",
+      placements:"The college maintains an 85%+ placement rate. Top recruiters include TCS, Infosys, Wipro, Tech Mahindra, and Cognizant.",
+      admissions:"Admissions are based on MHT-CET for UG. Apply online via the official website; document verification and counseling follow.",
+      labs:"Key labs: AI & ML (AT-201), Deep Learning (AT-202), Data Science (AT-210), Software Designing (CSE-305), Database (CSE-201).",
+      faculty:"Here are CSE faculty details:",
+      principal:"Principal: Dr. B. K. Songe (Ph.D, NITK) — BEE Certified Energy Manager & Auditor.",
+      hod:"HOD (CSE): Dr. V. V. Bag — B.Tech (CSE), M.Tech (Computer), Ph.D (Computer Engg).",
+      default:"Ask about courses, placements, admissions, faculty, or labs."
+    },
+    hi:{
+      greeting:"नमस्ते! मैं Askify हूँ, आपका AI-powered N.K. Orchid College सहायक। मैं कैसे मदद कर सकता हूँ?",
+      courses:"यहाँ B.Tech (CSE) के साथ AI & ML, Data Science, Cyber Security और IoT में विशेषज्ञता उपलब्ध है।",
+      placements:"कॉलेज का प्लेसमेंट रिकॉर्ड 85%+ है। TCS, Infosys, Wipro, Tech Mahindra, Cognizant में नियुक्ति होती है।",
+      admissions:"प्रवेश MHT-CET के आधार पर। आधिकारिक वेबसाइट से ऑनलाइन आवेदन करें।",
+      labs:"मुख्य लैब्स: AI & ML (AT-201), Deep Learning (AT-202), Data Science (AT-210)।",
+      faculty:"CSE विभाग के शिक्षक:",
+      principal:"प्राचार्य: Dr. B. K. Songe (NITK) — BEE प्रमाणित।",
+      hod:"विभागाध्यक्ष (CSE): Dr. V. V. Bag — Ph.D (Computer Engg)।",
+      default:"कोर्स, प्लेसमेंट, फैकल्टी के बारे में पूछें।"
+    },
+    mr:{
+      greeting:"नमस्कार! मी Askify — AI-powered N.K. Orchid College सहाय्यक. मी कशी मदत करू शकतो?",
+      courses:"येथे B.Tech (CSE) सोबत AI & ML, Data Science, Cyber Security आणि IoT अभ्यासक्रम आहेत.",
+      placements:"कॉलेजचा प्लेसमेंट रेकॉर्ड 85%+ आहे। TCS, Infosys, Wipro मध्ये नियुक्ती होते.",
+      admissions:"प्रवेश MHT-CET गुणांवर आधारित. अधिकृत वेबसाइटवरून अर्ज करा.",
+      labs:"मुख्य प्रयोगशाळा: AI & ML (AT-201), Deep Learning (AT-202).",
+      faculty:"CSE विभागातील प्राध्यापक:",
+      principal:"प्राचार्य: Dr. B. K. Songe (NITK)।",
+      hod:"विभागप्रमुख: Dr. V. V. Bag — Ph.D।",
+      default:"कोर्स, प्लेसमेंट विचारा."
+    }
+  };
+
+  let conversationHistory = [];
+  let lang = 'en';
+  let isProcessing = false;
+
+  const messagesEl = document.getElementById('messages');
+  const welcomeEl  = document.getElementById('welcome');
+  const inputEl    = document.getElementById('messageInput');
+  const sendBtn    = document.getElementById('sendBtn');
+  const clearBtn   = document.getElementById('clearBtn');
+  const voiceBtn   = document.getElementById('voiceBtn');
+  const langSel    = document.getElementById('languageSelect');
+  const themeBtn   = document.getElementById('themeBtn');
+  const apiStatus  = document.getElementById('apiStatus');
+
+  function addMessage(html, who='bot'){
+    welcomeEl.style.display='none';
+    const wrap = document.createElement('div');
+    wrap.className = `msg ${who}`;
+    wrap.innerHTML = `
+      <div class="avatar ${who}">${who==='bot'?'🤖':'🧑‍🎓'}</div>
+      <div class="bubble">${html}</div>
+    `;
+    messagesEl.appendChild(wrap);
+    messagesEl.parentElement.scrollTop = messagesEl.parentElement.scrollHeight;
+    return wrap;
+  }
+
+  function addTypingIndicator(){
+    return addMessage('<div class="typing-indicator"><span></span><span></span><span></span></div>', 'bot');
+  }
+
+  function removeMessage(msgElement){
+    if(msgElement && msgElement.parentNode) msgElement.parentNode.removeChild(msgElement);
+  }
+
+  function facultyHTML(list=facultyData){
+    return list.map(f=>`
+      <div class="faculty-card">
+        <div class="faculty-name">${f.name}</div>
+        <div class="faculty-detail">${f.position}</div>
+        <div class="faculty-detail">${f.qualification}</div>
+        ${f.location?`<div class="faculty-detail">📍 ${f.location}</div>`:""}
+      </div>
+    `).join('');
+  }
+
+  function buildSystemPrompt(){
+    const langMap = { en: 'English', hi: 'Hindi', mr: 'Marathi' };
+    return `You are Askify, an intelligent assistant for N.K. Orchid College of Engineering & Technology in Solapur, India.
+
+RESPOND IN ${langMap[lang]} LANGUAGE.
+
+COLLEGE DATA:
+Name: ${collegeInfo.name}
+Specializations: ${collegeInfo.specializations.join(', ')}
+Placement Rate: ${collegeInfo.placementRate}
+Top Recruiters: ${collegeInfo.topRecruiters.join(', ')}
+Admission: ${collegeInfo.admissionBasis}
+
+LABS:
+${collegeInfo.labs.map(l => `- ${l.name} (${l.code})`).join('\n')}
+
+FACULTY (CSE):
+${facultyData.map(f => `- ${f.name} | ${f.position} | ${f.qualification}${f.location ? ' | '+f.location : ''}`).join('\n')}
+
+Use this data as PRIMARY source. Format faculty info as HTML cards when needed.`;
+  }
+
+  async function getAIResponse(userMessage){
+    try {
+      if(conversationHistory.length === 0){
+        conversationHistory.push({
+          role: 'user',
+          parts: [{ text: buildSystemPrompt() }]
+        });
+        conversationHistory.push({
+          role: 'model',
+          parts: [{ text: 'Understood. I will assist with N.K. Orchid College info.' }]
+        });
+      }
+
+      conversationHistory.push({
+        role: 'user',
+        parts: [{ text: userMessage }]
+      });
+
+      const response = await fetch(BACKEND_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: conversationHistory,
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if(!data.candidates?.[0]?.content?.parts?.[0]?.text){
+        throw new Error('Invalid response format');
+      }
+
+      const botReply = data.candidates[0].content.parts[0].text;
+
+      conversationHistory.push({
+        role: 'model',
+        parts: [{ text: botReply }]
+      });
+
+      if(conversationHistory.length > 22){
+        conversationHistory = [
+          conversationHistory[0],
+          conversationHistory[1],
+          ...conversationHistory.slice(-20)
+        ];
+      }
+
+      return botReply;
+
+    } catch (error) {
+      console.error('AI Error:', error);
+      return `⚠️ AI temporarily unavailable. ${kb[lang].default}`;
+    }
+  }
+
+  async function send(){
+    const text = inputEl.value.trim();
+    if(!text || isProcessing) return;
+
+    isProcessing = true;
+    sendBtn.disabled = true;
+    
+    addMessage(text, 'user');
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+
+    const typingMsg = addTypingIndicator();
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const response = await getAIResponse(text);
+      removeMessage(typingMsg);
+      addMessage(response, 'bot');
+    } catch(error) {
+      removeMessage(typingMsg);
+      addMessage('Sorry, something went wrong. Please try again.', 'bot');
+      console.error('Error:', error);
+    } finally {
+      isProcessing = false;
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  sendBtn.addEventListener('click', send);
+  
+  inputEl.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && !e.shiftKey){ 
+      e.preventDefault(); 
+      send(); 
+    }
+  });
+
+  inputEl.addEventListener('input', function(){
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  });
+
+  document.querySelectorAll('.qbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      inputEl.value = btn.dataset.question;
+      send();
+    });
+  });
+
+  clearBtn.addEventListener('click', () => {
+    messagesEl.innerHTML = ''; 
+    welcomeEl.style.display = 'flex';
+    conversationHistory = [];
+    addMessage(kb[lang].greeting, 'bot');
+  });
+
+  langSel.addEventListener('change', e => {
+    lang = e.target.value;
+    conversationHistory = [];
+    addMessage(kb[lang].greeting, 'bot');
+  });
+
+  function setTheme(mode){
+    document.documentElement.classList.toggle('dark', mode === 'dark');
+    localStorage.setItem('askify-theme', mode);
+    themeBtn.textContent = mode === 'dark' ? '☀️' : '🌙';
+  }
+  
+  const savedTheme = localStorage.getItem('askify-theme') || 
+                     (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  setTheme(savedTheme);
+  
+  themeBtn.addEventListener('click', () => {
+    setTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+  });
+
+  if('webkitSpeechRecognition' in window){
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    
+    recognition.onresult = e => {
+      inputEl.value = e.results[0][0].transcript;
+      send();
+    };
+    
+    recognition.onend = () => voiceBtn.classList.remove('recording');
+    recognition.onerror = () => voiceBtn.classList.remove('recording');
+    
+    voiceBtn.addEventListener('click', () => {
+      voiceBtn.classList.add('recording');
+      recognition.start();
+    });
+    
+    langSel.addEventListener('change', () => {
+      recognition.lang = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+    });
+  } else {
+    voiceBtn.disabled = true;
+    voiceBtn.title = "Voice input not supported";
+  }
+
+  addMessage(kb.en.greeting, 'bot');
+  inputEl.focus();
+</script>
+</body>
+</html>
