@@ -1,0 +1,7 @@
+{
+  "name": "askify-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend proxy for ASKIFY chatbot",
+  "main": "api/chat.js"
+}
